@@ -24,14 +24,16 @@ public class FilmController {
     public Film addFilm(@Valid @RequestBody Film film) {
         validateFilm(film);
         film.setId(getNextId());
-        return films.put(film.getId(), film);
+        films.put(film.getId(), film);
+        return film;
     }
 
     @PutMapping
     public Film updateFilm(@Valid @RequestBody Film film) {
         if (film.getId() == null) throw new ValidationException("Некорректный идентификатор фильма");
         validateFilm(film);
-        return films.put(film.getId(), film);
+        films.put(film.getId(), film);
+        return film;
     }
 
     private void validateFilm(Film film) {

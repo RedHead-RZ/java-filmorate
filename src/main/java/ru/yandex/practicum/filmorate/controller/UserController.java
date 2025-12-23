@@ -27,16 +27,18 @@ public class UserController {
     public User addUser(@Valid @RequestBody User user) {
         validateUser(user);
         user.setId(getNextId());
-        log.info("Добавляем нового пользователя: ", user);
-        return users.put(user.getId(), user);
+        log.info("Добавляем нового пользователя: {}", user);
+        users.put(user.getId(), user);
+        return user;
     }
 
     @PutMapping
     public User updateUser(@Valid @RequestBody User user) {
         if (user.getId() == null) throw new ValidationException("Некорректный идентификатор пользователя");
         validateUser(user);
-        log.info("Изменяем данные по пользователю: ", user);
-        return users.put(user.getId(), user);
+        log.info("Изменяем данные по пользователю: {}", user);
+        users.put(user.getId(), user);
+        return user;
     }
 
     private void validateUser(User user) {
