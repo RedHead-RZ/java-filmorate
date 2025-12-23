@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -17,4 +18,14 @@ public class Film {
     private String description;
     private LocalDate releaseDate;
     private Duration duration;
+
+    @JsonProperty("duration")
+    public long getDurationMinutes() {
+        return duration.toMinutes();
+    }
+
+    @JsonProperty("duration")
+    public void setDurationMinutes(long minutes) {
+        this.duration = Duration.ofMinutes(minutes);
+    }
 }

@@ -35,6 +35,7 @@ public class UserController {
     @PutMapping
     public User updateUser(@Valid @RequestBody User user) {
         if (user.getId() == null) throw new ValidationException("Некорректный идентификатор пользователя");
+        if (!users.containsKey(user.getId())) throw new ValidationException("Несуществующий пользователь");
         validateUser(user);
         log.info("Изменяем данные по пользователю: {}", user);
         users.put(user.getId(), user);
@@ -46,6 +47,8 @@ public class UserController {
             throw new ValidationException("Некорректный логин");
         if (user.getBirthday().isAfter(LocalDate.now()))
             throw new ValidationException("Ты еще не родился. Попробуй попозже");
+        if (user.getName().isEmpty())
+            user.setName(user.getLogin());
     }
 
     private long getNextId() {
