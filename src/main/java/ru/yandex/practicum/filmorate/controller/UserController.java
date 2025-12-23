@@ -47,7 +47,7 @@ public class UserController {
             throw new ValidationException("Некорректный логин");
         if (user.getBirthday().isAfter(LocalDate.now()))
             throw new ValidationException("Ты еще не родился. Попробуй попозже");
-        if (user.getName().isEmpty())
+        if (user.getName() == null || user.getName().isEmpty())
             user.setName(user.getLogin());
     }
 
