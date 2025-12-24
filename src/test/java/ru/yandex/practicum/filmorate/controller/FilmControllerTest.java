@@ -1,48 +1,32 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import jakarta.validation.ConstraintViolation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FilmControllerTest {
 
-    private LocalValidatorFactoryBean validator;
     private FilmController controller;
 
     @BeforeEach
     void setUp() {
-        validator = new LocalValidatorFactoryBean();
-        validator.afterPropertiesSet();
         controller = new FilmController();
     }
 
     @Test
-    void validFilmTest() {
-        Film film = createFilm(1L, "Title", "Description",
-                LocalDate.of(1986, 1, 1), Duration.ofMinutes(124));
-        Set<ConstraintViolation<Film>> violations = validator.validate(film);
-        assertTrue(violations.isEmpty());
-    }
-
-    @Test
-    void invalidFilmTest() {
+    void addFilmWithInvalidNameTest() {
         Film film = createFilm(1L, "", "Description",
                 LocalDate.of(1986, 1, 1), Duration.ofMinutes(124));
-        Set<ConstraintViolation<Film>> violations = validator.validate(film);
-        assertFalse(violations.isEmpty());
-        assertEquals("name", violations.iterator().next().getPropertyPath().toString());
+        assertThrows(ValidationException.class, () -> controller.addFilm(film));
     }
-
-    //
 
     @Test
     void addValidFilmTest() {
@@ -70,8 +54,6 @@ public class FilmControllerTest {
         assertEquals(LocalDate.of(2000, 1, 1), film.getReleaseDate());
         assertEquals(Duration.ofMinutes(98), film.getDuration());
     }
-
-    //
 
     private Film createFilm(Long id, String name, String description, LocalDate releaseDate, Duration duration) {
         Film film = new Film();

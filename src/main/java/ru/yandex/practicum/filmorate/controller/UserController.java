@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
@@ -10,6 +9,7 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/users")
@@ -24,7 +24,7 @@ public class UserController {
     }
 
     @PostMapping
-    public User addUser(@Valid @RequestBody User user) {
+    public User addUser(@RequestBody User user) {
         validateUser(user);
         user.setId(getNextId());
         log.info("Добавляем нового пользователя: {}", user);
@@ -33,7 +33,7 @@ public class UserController {
     }
 
     @PutMapping
-    public User updateUser(@Valid @RequestBody User user) {
+    public User updateUser(@RequestBody User user) {
         if (user.getId() == null) throw new ValidationException("Некорректный идентификатор пользователя");
         if (!users.containsKey(user.getId())) throw new ValidationException("Несуществующий пользователь");
         validateUser(user);
@@ -49,6 +49,10 @@ public class UserController {
             throw new ValidationException("Ты еще не родился. Попробуй попозже");
         if (user.getName() == null || user.getName().isEmpty())
             user.setName(user.getLogin());
+        Pattern pattern = Pattern.compile("^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@"
+                + "[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$");
+        if (user.getEmail() == null || user.getEmail().isEmpty() || !pattern.matcher(user.getEmail()).matches())
+            throw new ValidationException("Некорректный формат E-mail");
     }
 
     private long getNextId() {

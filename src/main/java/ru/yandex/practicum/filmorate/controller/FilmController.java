@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -21,7 +20,7 @@ public class FilmController {
     }
 
     @PostMapping
-    public Film addFilm(@Valid @RequestBody Film film) {
+    public Film addFilm(@RequestBody Film film) {
         validateFilm(film);
         film.setId(getNextId());
         films.put(film.getId(), film);
@@ -29,7 +28,7 @@ public class FilmController {
     }
 
     @PutMapping
-    public Film updateFilm(@Valid @RequestBody Film film) {
+    public Film updateFilm(@RequestBody Film film) {
         if (film.getId() == null) throw new ValidationException("Некорректный идентификатор фильма");
         if (!films.containsKey(film.getId())) throw new ValidationException("Несуществующий фильм");
         validateFilm(film);
