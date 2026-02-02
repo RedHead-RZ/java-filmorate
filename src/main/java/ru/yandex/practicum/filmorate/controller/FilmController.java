@@ -1,57 +1,93 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.SoughtObjectNotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.film.FilmService;
 
-import java.time.LocalDate;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/films")
+@Slf4j
 public class FilmController {
-    private final Map<Long, Film> films = new HashMap<>();
+    private final FilmService filmService;
 
+    @Autowired
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
+    }
+
+    //получение фильма по id
+    @GetMapping("/{filmId}")
+    public Optional<Film> getFilm(@PathVariable Long filmId) {
+        return filmService.getFilmById(filmId);
+    }
+
+    //получение всех фильмов
     @GetMapping
     public Collection<Film> getFilms() {
-        return films.values();
+        return filmService.getFilms();
     }
 
+    //ролучаем список самых популярных фильмов
+    @GetMapping("/popular?count={count}")
+    public Collection<Film> getFilmsPopular(@RequestParam Long count) {
+        return filmService.getPopularFilms(count);
+    }
+
+    //добавление нового фильма
     @PostMapping
     public Film addFilm(@RequestBody Film film) {
-        validateFilm(film);
-        film.setId(getNextId());
-        films.put(film.getId(), film);
-        return film;
+        return filmService.addFilm(film);
     }
 
+    //изменение фильма
     @PutMapping
     public Film updateFilm(@RequestBody Film film) {
-        if (film.getId() == null) throw new ValidationException("Некорректный идентификатор фильма");
-        if (!films.containsKey(film.getId())) throw new ValidationException("Несуществующий фильм");
-        validateFilm(film);
-        films.put(film.getId(), film);
-        return film;
+        return filmService.updateFilm(film);
     }
 
-    private void validateFilm(Film film) {
-        if (film.getName().isEmpty()) throw new ValidationException("Необходимо заполнить название фильма");
-        if (film.getDescription().length() > 200) throw new ValidationException("Описание фильма не должно "
-                + "превышать 200 символов");
-        if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28)))
-            throw new ValidationException("На момент этой даты не было ни одного фильма =)");
-        if (film.getDuration().isNegative()) throw new ValidationException("Дружочек, у тебя длина "
-                + "фильма отрицательная");
+    //ставим лайк фильму
+    @PutMapping("/{id}/like/{userId}")
+    public Film likeFilm(@PathVariable Long id, @PathVariable Long userId) {
+        return filmService.likeFilm(id, userId);
     }
 
-    private long getNextId() {
-        long currentMaxId = films.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+    //удаляем фильм по id
+    @DeleteMapping("/{filmId}")
+    public void deleteFilm(@PathVariable Long filmId) {
+        filmService.removeFilm(filmId);
+    }
+
+    //удаляем лайк у фильма
+    @DeleteMapping("/{id}/like/{userId}")
+    public void deleteLikeFilm(@PathVariable Long id, @PathVariable Long userId) {
+        filmService.deleteLikeFilm(id, userId);
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    private Map<String, String> objectNotFound(final SoughtObjectNotFoundException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    private Map<String, String> handleValidationException(final ValidationException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    private Map<String, String> handleRuntimeException(final RuntimeException e) {
+        log.error(e.getMessage(), e);
+        return Map.of("error", "Что-то пошло не по плану");
     }
 }
