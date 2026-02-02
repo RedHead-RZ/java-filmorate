@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -18,6 +19,7 @@ public class Film {
     private String description;
     private LocalDate releaseDate;
     private Duration duration;
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Set<Long> likes = new HashSet<>();
 
     @JsonProperty("duration")
