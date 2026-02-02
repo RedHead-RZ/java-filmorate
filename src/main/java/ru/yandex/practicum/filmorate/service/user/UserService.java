@@ -25,8 +25,7 @@ public class UserService {
 
     public Optional<User> getUserById(Long id) {
         return Optional.ofNullable(userStorage.getUser(id))
-                .or(() ->
-                {
+                .or(() -> {
                     throw new SoughtObjectNotFoundException("Пользователя с таким Id не сущесвтует");
                 });
     }
