@@ -53,6 +53,7 @@ public class UserService {
 
     public User updateUser(User user) {
         validateUser(user);
+        getUserById(user.getId());
         return userStorage.updateUser(user);
     }
 

@@ -51,9 +51,7 @@ public class FilmService {
 
     public Film updateFilm(Film film) {
         validateFilm(film);
-        if (film.getId() == null) {
-            throw new SoughtObjectNotFoundException("Фильм не найден");
-        }
+        getFilmById(film.getId());
         return filmStorage.updateFilm(film);
     }
 
