@@ -2,24 +2,23 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.user.UserService;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UserControllerTest {
 
-    private LocalValidatorFactoryBean validator;
     private UserController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new UserController();
+        controller = new UserController(new UserService(new InMemoryUserStorage()));
     }
 
     @Test
@@ -61,6 +60,51 @@ public class UserControllerTest {
         assertEquals("newLogin", user.getLogin());
         assertEquals("newName", user.getName());
         assertEquals(LocalDate.of(2011, 1, 1), user.getBirthday());
+    }
+
+    @Test
+    void getUsersTest() {
+        controller.addUser(createUser(1L, "valid@email.test", "login", "name",
+                LocalDate.of(2010, 1, 1)));
+        controller.addUser(createUser(2L, "valid@email.test", "login", "name",
+                LocalDate.of(2010, 1, 1)));
+        controller.addUser(createUser(3L, "valid@email.test", "login", "name",
+                LocalDate.of(2010, 1, 1)));
+        assertEquals(3, controller.getUsers().size());
+    }
+
+    @Test
+    void getUserByIdTest() {
+        controller.addUser(createUser(1L, "valid@email.test", "login", "name",
+                LocalDate.of(2010, 1, 1)));
+        assertEquals(1L, controller.getUser(1L).get().getId());
+    }
+
+    @Test
+    void getUserFriendsTest() {
+        controller.addUser(createUser(1L, "valid@email.test", "login", "name",
+                LocalDate.of(2010, 1, 1)));
+        controller.addUser(createUser(2L, "valid@email.test", "login", "name",
+                LocalDate.of(2010, 1, 1)));
+        controller.addFriend(1L, 2L);
+        assertEquals(1, controller.getUser(1L).get().getFriends().size());
+        assertEquals(1, controller.getUser(2L).get().getFriends().size());
+        assertTrue(controller.getUser(1L).get().getFriends().contains(2L));
+        assertTrue(controller.getUser(2L).get().getFriends().contains(1L));
+    }
+
+    @Test
+    void deleteFriendTest() {
+        controller.addUser(createUser(1L, "valid@email.test", "login", "name",
+                LocalDate.of(2010, 1, 1)));
+        controller.addUser(createUser(2L, "valid@email.test", "login", "name",
+                LocalDate.of(2010, 1, 1)));
+        controller.addFriend(1L, 2L);
+        assertTrue(controller.getUser(1L).get().getFriends().contains(2L));
+        assertTrue(controller.getUser(2L).get().getFriends().contains(1L));
+        controller.deleteFriend(1L, 2L);
+        assertFalse(controller.getUser(1L).get().getFriends().contains(2L));
+        assertFalse(controller.getUser(2L).get().getFriends().contains(1L));
     }
 
     private User createUser(Long id, String email, String login, String name, LocalDate birthday) {

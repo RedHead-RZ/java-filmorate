@@ -1,66 +1,99 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.SoughtObjectNotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.user.UserService;
 
-import java.time.LocalDate;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
 @Slf4j
 public class UserController {
-    private final Map<Long, User> users = new HashMap<>();
+    private final UserService userService;
 
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    //получаем всех пользователей
     @GetMapping
     public Collection<User> getUsers() {
-        log.info("Получаем всех пользователей");
-        return users.values();
+        return userService.getUsers();
     }
 
+    //получаем пользователь по id
+    @GetMapping("/{userId}")
+    public Optional<User> getUser(@PathVariable Long userId) {
+        return userService.getUserById(userId);
+    }
+
+    //получаем всех друзей пользователя
+    @GetMapping("/{id}/friends")
+    public Collection<User> getFriends(@PathVariable Long id) {
+        return userService.getUserFriends(id);
+    }
+
+    //получаем пересекающихся друзей
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public Collection<User> getFriendsCommon(@PathVariable Long id, @PathVariable Long otherId) {
+        return userService.getFriendsCommon(id, otherId);
+    }
+
+    //добавляем пользователя
     @PostMapping
     public User addUser(@RequestBody User user) {
-        validateUser(user);
-        user.setId(getNextId());
-        log.info("Добавляем нового пользователя: {}", user);
-        users.put(user.getId(), user);
-        return user;
+        return userService.addUser(user);
     }
 
+    //изменяем пользователя
     @PutMapping
     public User updateUser(@RequestBody User user) {
-        if (user.getId() == null) throw new ValidationException("Некорректный идентификатор пользователя");
-        if (!users.containsKey(user.getId())) throw new ValidationException("Несуществующий пользователь");
-        validateUser(user);
-        log.info("Изменяем данные по пользователю: {}", user);
-        users.put(user.getId(), user);
-        return user;
+        return userService.updateUser(user);
     }
 
-    private void validateUser(User user) {
-        if (user.getLogin().isEmpty() || user.getLogin().contains(" "))
-            throw new ValidationException("Некорректный логин");
-        if (user.getBirthday().isAfter(LocalDate.now()))
-            throw new ValidationException("Ты еще не родился. Попробуй попозже");
-        if (user.getName() == null || user.getName().isEmpty())
-            user.setName(user.getLogin());
-        Pattern pattern = Pattern.compile("^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@"
-                + "[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$");
-        if (user.getEmail() == null || user.getEmail().isEmpty() || !pattern.matcher(user.getEmail()).matches())
-            throw new ValidationException("Некорректный формат E-mail");
+    //добавляем друга пользователю
+    @PutMapping("/{id}/friends/{friendId}")
+    public User addFriend(@PathVariable Long id, @PathVariable Long friendId) {
+        return userService.addFriend(id, friendId);
     }
 
-    private long getNextId() {
-        long currentMaxId = users.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+    //удаляем пользователя по id
+    @DeleteMapping("/{userId}")
+    public void deleteUser(@PathVariable Long userId) {
+        userService.removeUser(userId);
+    }
+
+    //удаляем друга у пользователя
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public void deleteFriend(@PathVariable Long id, @PathVariable Long friendId) {
+        userService.deleteFriend(id, friendId);
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    private Map<String, String> objectNotFound(final SoughtObjectNotFoundException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    private Map<String, String> handleValidationException(final ValidationException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    private Map<String, String> handleRuntimeException(final RuntimeException e) {
+        log.error(e.getMessage(), e);
+        return Map.of("error", "Что-то пошло не по плану");
     }
 }
